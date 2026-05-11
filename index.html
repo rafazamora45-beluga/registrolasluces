@@ -1,9 +1,9 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Visitas - Las Luces</title>
+    <title>Registro Las Luces</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -12,7 +12,7 @@
             --error: #e74c3c;
         }
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background-color: #f0f2f5; 
             display: flex; 
             justify-content: center; 
@@ -59,10 +59,7 @@
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             padding: 15px 25px; border-radius: 8px; color: white;
             font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            animation: slideIn 0.5s, fadeOut 0.5s 3.5s forwards;
         }
-        @keyframes slideIn { from { top: -50px; } to { top: 20px; } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -77,39 +74,33 @@
 
     <div id="step2" class="hidden">
         <h2>Validar Código</h2>
-        <p style="text-align:center; color:#666;">Revisa tu correo. El código vence en 70 segundos.</p>
+        <p style="text-align:center; color:#666; font-size: 13px;">Revisa tu correo. El código vence en 70 segundos.</p>
         <label>Código OTP</label>
         <input type="text" id="otpInput" placeholder="000000" maxlength="6">
         <button class="btn-success" onclick="validarOTP()">Entrar al Formulario</button>
-        <button class="btn-outline" onclick="volverInicio()">Pedir otro código</button>
+        <button class="btn-outline" onclick="location.reload()">Pedir otro código</button>
     </div>
 
     <div id="step3" class="hidden">
         <h2>Registro de Visita</h2>
         <label>Nombre del Visitante</label>
-        <input type="text" id="nombre" placeholder="Nombre completo">
-        
+        <input type="text" id="nombre">
         <label>Número de Casa</label>
-        <input type="text" id="casa" placeholder="Ej: 123-B">
-        
+        <input type="text" id="casa">
         <label>Persona a la que visita</label>
-        <input type="text" id="visitado" placeholder="Nombre del residente">
-        
+        <input type="text" id="visitado">
         <label>Fecha de Visita</label>
         <input type="date" id="fecha">
-        
         <label>Hora de Visita</label>
         <input type="time" id="hora">
-        
         <label>Número de DUI</label>
-        <input type="text" id="dui" placeholder="00000000-0">
-        
+        <input type="text" id="dui">
         <button class="btn-success" onclick="enviarRegistro()">Guardar en Bitácora</button>
     </div>
 </div>
 
 <script>
-    // URL DE EJECUCIÓN (Asegúrate de que este sea el link que termina en /exec)
+    // URL DE EJECUCIÓN CORRECTA
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxHmk3hhO9ojEKf9mXMc-V6a63PO927qPgD5B3M2QhJh4Po6SKC1xMA77rkJgDlU9x7w/exec";
 
     function mostrarAviso(mensaje, color) {
@@ -118,14 +109,13 @@
         toast.innerText = mensaje;
         toast.style.backgroundColor = color;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
+        setTimeout(() => toast.remove(), 3500);
     }
 
     async function solicitarOTP() {
         const correo = document.getElementById('email').value;
         if(!correo) return mostrarAviso("Escribe tu correo", "#e74c3c");
-
-        mostrarAviso("Verificando correo...", "#3498db");
+        mostrarAviso("Verificando...", "#3498db");
 
         try {
             const response = await fetch(URL_SCRIPT, {
@@ -133,23 +123,21 @@
                 body: JSON.stringify({ action: "requestOTP", email: correo })
             });
             const res = await response.json();
-
             if (res.status === "sent") {
-                mostrarAviso("¡Código enviado!", "#27ae60");
+                mostrarAviso("Código enviado al correo", "#27ae60");
                 document.getElementById('step1').classList.add('hidden');
                 document.getElementById('step2').classList.remove('hidden');
             } else {
                 mostrarAviso("Correo no autorizado", "#e74c3c");
             }
         } catch (e) {
-            mostrarAviso("Error: Verifica que el Script esté publicado como 'Cualquiera'", "#e74c3c");
+            mostrarAviso("Error de conexión", "#e74c3c");
         }
     }
 
     async function validarOTP() {
         const correo = document.getElementById('email').value;
         const otp = document.getElementById('otpInput').value;
-
         mostrarAviso("Validando...", "#3498db");
 
         try {
@@ -158,22 +146,15 @@
                 body: JSON.stringify({ action: "verifyOTP", email: correo, otp: otp })
             });
             const res = await response.json();
-
             if (res.status === "valid") {
-                mostrarAviso("Acceso correcto", "#27ae60");
                 document.getElementById('step2').classList.add('hidden');
                 document.getElementById('step3').classList.remove('hidden');
             } else {
-                mostrarAviso("OTP incorrecto o vencido", "#e74c3c");
+                mostrarAviso("Código incorrecto o vencido", "#e74c3c");
             }
         } catch (e) {
-            mostrarAviso("Error de validación", "#e74c3c");
+            mostrarAviso("Error al validar", "#e74c3c");
         }
-    }
-
-    function volverInicio() {
-        document.getElementById('step2').classList.add('hidden');
-        document.getElementById('step1').classList.remove('hidden');
     }
 
     async function enviarRegistro() {
@@ -186,23 +167,16 @@
             hora: document.getElementById('hora').value,
             dui: document.getElementById('dui').value
         };
-
-        mostrarAviso("Guardando...", "#3498db");
-
+        mostrarAviso("Registrando...", "#3498db");
         try {
-            await fetch(URL_SCRIPT, {
-                method: "POST",
-                mode: "no-cors", 
-                body: JSON.stringify(datos)
-            });
-            mostrarAviso("¡Registro exitoso!", "#27ae60");
-            setTimeout(() => location.reload(), 2500);
+            await fetch(URL_SCRIPT, { method: "POST", mode: "no-cors", body: JSON.stringify(datos) });
+            mostrarAviso("¡Registro guardado!", "#27ae60");
+            setTimeout(() => location.reload(), 2000);
         } catch (e) {
             mostrarAviso("Error al guardar", "#e74c3c");
         }
     }
 </script>
-
 </body>
-</html>        
+</html>
         
