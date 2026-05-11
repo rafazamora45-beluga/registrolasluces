@@ -3,180 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro Las Luces</title>
+    <title>Bitácora Las Luces</title>
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #3498db;
-            --success: #27ae60;
-            --error: #e74c3c;
-        }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #f0f2f5; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0;
-        }
-        .container { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            width: 100%; 
-            max-width: 400px; 
-        }
-        h2 { text-align: center; color: var(--primary); margin-top: 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 14px; }
-        input { 
-            width: 100%; 
-            padding: 12px; 
-            margin-bottom: 15px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            font-size: 16px;
-        }
-        button { 
-            width: 100%; 
-            padding: 14px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: 0.3s;
-            margin-bottom: 10px;
-        }
-        .btn-primary { background-color: var(--accent); color: white; }
-        .btn-success { background-color: var(--success); color: white; }
-        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --error: #e74c3c; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
+        h2 { text-align: center; color: var(--primary); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-blue { background: var(--accent); color: white; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-link { background: none; color: grey; }
         .hidden { display: none; }
-        
-        .toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            padding: 15px 25px; border-radius: 8px; color: white;
-            font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+        .msg { text-align: center; margin-top: 10px; font-size: 14px; font-weight: bold; }
+        .msg.ok  { color: var(--success); }
+        .msg.err { color: var(--error); }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div id="step1">
-        <h2>Acceso Residente</h2>
-        <label>Correo Electrónico</label>
-        <input type="email" id="email" placeholder="usuario@correo.com">
-        <button class="btn-primary" onclick="solicitarOTP()">Enviar Código</button>
+
+    <!-- Paso 1: Correo -->
+    <div id="p1">
+        <h2>Acceso</h2>
+        <input type="email" id="correo" placeholder="Correo registrado">
+        <button class="btn-blue" onclick="solicitar()">Enviar Código</button>
+        <p class="msg" id="msg1"></p>
     </div>
 
-    <div id="step2" class="hidden">
-        <h2>Validar Código</h2>
-        <p style="text-align:center; color:#666; font-size: 13px;">Revisa tu correo. El código vence en 70 segundos.</p>
-        <label>Código OTP</label>
-        <input type="text" id="otpInput" placeholder="000000" maxlength="6">
-        <button class="btn-success" onclick="validarOTP()">Entrar al Formulario</button>
-        <button class="btn-outline" onclick="location.reload()">Pedir otro código</button>
+    <!-- Paso 2: OTP -->
+    <div id="p2" class="hidden">
+        <h2>Validar OTP</h2>
+        <input type="text" id="otp" placeholder="Código de 6 dígitos" maxlength="6">
+        <button class="btn-green" onclick="validar()">Verificar</button>
+        <button class="btn-link" onclick="location.reload()">Regresar</button>
+        <p class="msg" id="msg2"></p>
     </div>
 
-    <div id="step3" class="hidden">
+    <!-- Paso 3: Registro -->
+    <div id="p3" class="hidden">
         <h2>Registro de Visita</h2>
-        <label>Nombre del Visitante</label>
-        <input type="text" id="nombre">
-        <label>Número de Casa</label>
-        <input type="text" id="casa">
-        <label>Persona a la que visita</label>
-        <input type="text" id="visitado">
-        <label>Fecha de Visita</label>
+        <input type="text" id="nombre"   placeholder="Nombre Visitante">
+        <input type="text" id="casa"     placeholder="Casa / Número">
+        <input type="text" id="visitado" placeholder="Residente que visita">
         <input type="date" id="fecha">
-        <label>Hora de Visita</label>
         <input type="time" id="hora">
-        <label>Número de DUI</label>
-        <input type="text" id="dui">
-        <button class="btn-success" onclick="enviarRegistro()">Guardar en Bitácora</button>
+        <input type="text" id="dui"      placeholder="DUI (########-#)">
+        <button class="btn-green" onclick="registrar()">Guardar Registro</button>
+        <p class="msg" id="msg3"></p>
     </div>
+
 </div>
 
 <script>
-    // URL DE EJECUCIÓN CORRECTA
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxHmk3hhO9ojEKf9mXMc-V6a63PO927qPgD5B3M2QhJh4Po6SKC1xMA77rkJgDlU9x7w/exec";
+    const URL_APP = "https://script.google.com/macros/s/AKfycbwX4ChURyCEpru9NClxxXYJrKenmHj0ec3wGFogxmwqQ6xUVVJ92xkVKCWgUc4NSv-Zvg/exec";
 
-    function mostrarAviso(mensaje, color) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = mensaje;
-        toast.style.backgroundColor = color;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3500);
+    function setMsg(id, texto, tipo) {
+        const el = document.getElementById(id);
+        el.textContent = texto;
+        el.className = "msg " + tipo;
     }
 
-    async function solicitarOTP() {
-        const correo = document.getElementById('email').value;
-        if(!correo) return mostrarAviso("Escribe tu correo", "#e74c3c");
-        mostrarAviso("Verificando...", "#3498db");
+    async function solicitar() {
+        const email = document.getElementById('correo').value.trim();
+        if (!email) return setMsg('msg1', 'Ingresa un correo.', 'err');
 
+        setMsg('msg1', 'Enviando código...', 'ok');
         try {
-            const response = await fetch(URL_SCRIPT, {
+            const r = await fetch(URL_APP, {
                 method: "POST",
-                body: JSON.stringify({ action: "requestOTP", email: correo })
+                body: JSON.stringify({ action: "requestOTP", email })
             });
-            const res = await response.json();
+            const res = await r.json();
             if (res.status === "sent") {
-                mostrarAviso("Código enviado al correo", "#27ae60");
-                document.getElementById('step1').classList.add('hidden');
-                document.getElementById('step2').classList.remove('hidden');
+                document.getElementById('p1').classList.add('hidden');
+                document.getElementById('p2').classList.remove('hidden');
             } else {
-                mostrarAviso("Correo no autorizado", "#e74c3c");
+                setMsg('msg1', 'Correo no registrado.', 'err');
             }
-        } catch (e) {
-            mostrarAviso("Error de conexión", "#e74c3c");
+        } catch(e) {
+            setMsg('msg1', 'Error de conexión. Verifica permisos del Script.', 'err');
         }
     }
 
-    async function validarOTP() {
-        const correo = document.getElementById('email').value;
-        const otp = document.getElementById('otpInput').value;
-        mostrarAviso("Validando...", "#3498db");
-
-        try {
-            const response = await fetch(URL_SCRIPT, {
-                method: "POST",
-                body: JSON.stringify({ action: "verifyOTP", email: correo, otp: otp })
-            });
-            const res = await response.json();
-            if (res.status === "valid") {
-                document.getElementById('step2').classList.add('hidden');
-                document.getElementById('step3').classList.remove('hidden');
-            } else {
-                mostrarAviso("Código incorrecto o vencido", "#e74c3c");
-            }
-        } catch (e) {
-            mostrarAviso("Error al validar", "#e74c3c");
-        }
-    }
-
-    async function enviarRegistro() {
-        const datos = {
-            action: "saveVisit",
-            nombre: document.getElementById('nombre').value,
-            casa: document.getElementById('casa').value,
-            visitado: document.getElementById('visitado').value,
-            fecha: document.getElementById('fecha').value,
-            hora: document.getElementById('hora').value,
-            dui: document.getElementById('dui').value
-        };
-        mostrarAviso("Registrando...", "#3498db");
-        try {
-            await fetch(URL_SCRIPT, { method: "POST", mode: "no-cors", body: JSON.stringify(datos) });
-            mostrarAviso("¡Registro guardado!", "#27ae60");
-            setTimeout(() => location.reload(), 2000);
-        } catch (e) {
-            mostrarAviso("Error al guardar", "#e74c3c");
-        }
-    }
-</script>
-</body>
-</html>
-        
+    async function validar() {
+        const email = document.getElementById('correo').value.trim();
+        const otp   = document
