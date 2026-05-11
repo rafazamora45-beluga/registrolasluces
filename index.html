@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -55,7 +55,6 @@
         .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
         .hidden { display: none; }
         
-        /* Estilo para los Pop-ups */
         .toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             padding: 15px 25px; border-radius: 8px; color: white;
@@ -110,8 +109,8 @@
 </div>
 
 <script>
-   https://script.google.com/macros/library/d/11HODbv_LBJ3IibaNtfE79BWR9nD8TOoOz3xAi6Z0SdZhD9Z2bn-p-csx/3
-    const URL_SCRIPT = "TU_URL_DE_EJECUCION_AQUI";
+    // URL DE EJECUCIÓN (Asegúrate de que este sea el link que termina en /exec)
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxHmk3hhO9ojEKf9mXMc-V6a63PO927qPgD5B3M2QhJh4Po6SKC1xMA77rkJgDlU9x7w/exec";
 
     function mostrarAviso(mensaje, color) {
         const toast = document.createElement('div');
@@ -136,14 +135,14 @@
             const res = await response.json();
 
             if (res.status === "sent") {
-                mostrarAviso("¡Revisa tu correo!", "#27ae60");
+                mostrarAviso("¡Código enviado!", "#27ae60");
                 document.getElementById('step1').classList.add('hidden');
                 document.getElementById('step2').classList.remove('hidden');
             } else {
-                mostrarAviso("Correo no encontrado en la base de datos", "#e74c3c");
+                mostrarAviso("Correo no autorizado", "#e74c3c");
             }
         } catch (e) {
-            mostrarAviso("Error de conexión", "#e74c3c");
+            mostrarAviso("Error: Verifica que el Script esté publicado como 'Cualquiera'", "#e74c3c");
         }
     }
 
@@ -161,14 +160,14 @@
             const res = await response.json();
 
             if (res.status === "valid") {
-                mostrarAviso("Código correcto", "#27ae60");
+                mostrarAviso("Acceso correcto", "#27ae60");
                 document.getElementById('step2').classList.add('hidden');
                 document.getElementById('step3').classList.remove('hidden');
             } else {
-                mostrarAviso("Código incorrecto o vencido (70s). Intenta de nuevo.", "#e74c3c");
+                mostrarAviso("OTP incorrecto o vencido", "#e74c3c");
             }
         } catch (e) {
-            mostrarAviso("Error al validar", "#e74c3c");
+            mostrarAviso("Error de validación", "#e74c3c");
         }
     }
 
@@ -188,7 +187,7 @@
             dui: document.getElementById('dui').value
         };
 
-        mostrarAviso("Registrando visita...", "#3498db");
+        mostrarAviso("Guardando...", "#3498db");
 
         try {
             await fetch(URL_SCRIPT, {
@@ -205,4 +204,5 @@
 </script>
 
 </body>
-</html>
+</html>        
+        
