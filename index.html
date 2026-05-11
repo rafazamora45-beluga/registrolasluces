@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitácora Las Luces</title>
+    <title>Bitacora Las Luces</title>
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --error: #e74c3c; }
         body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
@@ -13,7 +13,7 @@
         button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .btn-blue { background: var(--accent); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .btn-link { background: none; color: grey; }
+        .btn-link { background: none; color: grey; cursor: pointer; }
         .hidden { display: none; }
         .msg { text-align: center; margin-top: 10px; font-size: 14px; font-weight: bold; }
         .msg.ok  { color: var(--success); }
@@ -26,13 +26,13 @@
     <div id="p1">
         <h2>Acceso</h2>
         <input type="email" id="correo" placeholder="Correo registrado">
-        <button class="btn-blue" onclick="solicitar()">Enviar Código</button>
+        <button class="btn-blue" onclick="solicitar()">Enviar Codigo</button>
         <p class="msg" id="msg1"></p>
     </div>
 
     <div id="p2" class="hidden">
         <h2>Validar OTP</h2>
-        <input type="text" id="otp" placeholder="Código de 6 dígitos" maxlength="6">
+        <input type="text" id="otp" placeholder="Codigo de 6 digitos" maxlength="6">
         <button class="btn-green" onclick="validar()">Verificar</button>
         <button class="btn-link" onclick="location.reload()">Regresar</button>
         <p class="msg" id="msg2"></p>
@@ -41,7 +41,7 @@
     <div id="p3" class="hidden">
         <h2>Registro de Visita</h2>
         <input type="text" id="nombre"   placeholder="Nombre Visitante">
-        <input type="text" id="casa"     placeholder="Casa / Número">
+        <input type="text" id="casa"     placeholder="Casa / Numero">
         <input type="text" id="visitado" placeholder="Residente que visita">
         <input type="date" id="fecha">
         <input type="time" id="hora">
@@ -53,78 +53,96 @@
 </div>
 
 <script>
-    const URL_APP = "https://script.google.com/macros/s/AKfycbwX4ChURyCEpru9NClxxXYJrKenmHj0ec3wGFogxmwqQ6xUVVJ92xkVKCWgUc4NSv-Zvg/exec";
+    const URL_APP = "https://script.google.com/macros/s/AKfycbw8y8EYNf88J1mCl2Qplryje_uFnuoGOEO4NbwfC-PBljVuVKc_WT7fKE6X6D6DcHSzDg/exec";
 
     function setMsg(id, texto, tipo) {
-        const el = document.getElementById(id);
+        var el = document.getElementById(id);
         el.textContent = texto;
         el.className = "msg " + tipo;
     }
 
-    // Todas las llamadas ahora son GET para evitar el problema de CORS
-    async function getAPI(params) {
-        const url = URL_APP + "?" + new URLSearchParams(params).toString();
-        const r = await fetch(url);
-        return await r.json();
+    function callAPI(params, callback) {
+        var cbName = "cb_" + Date.now();
+        var script = document.createElement("script");
+
+        params.callback = cbName;
+
+        var qs = Object.keys(params).map(function(k) {
+            return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
+        }).join("&");
+
+        window[cbName] = function(data) {
+            delete window[cbName];
+            document.body.removeChild(script);
+            callback(null, data);
+        };
+
+        script.onerror = function() {
+            delete window[cbName];
+            document.body.removeChild(script);
+            callback(new Error("Error de conexion"));
+        };
+
+        script.src = URL_APP + "?" + qs;
+        document.body.appendChild(script);
     }
 
-    async function solicitar() {
-        const email = document.getElementById('correo').value.trim();
-        if (!email) return setMsg('msg1', 'Ingresa un correo.', 'err');
+    function solicitar() {
+        var email = document.getElementById("correo").value.trim();
+        if (!email) return setMsg("msg1", "Ingresa un correo.", "err");
 
-        setMsg('msg1', 'Enviando código...', 'ok');
-        try {
-            const res = await getAPI({ action: "requestOTP", email });
+        setMsg("msg1", "Enviando codigo...", "ok");
+
+        callAPI({ action: "requestOTP", email: email }, function(err, res) {
+            if (err) return setMsg("msg1", "Error de conexion.", "err");
             if (res.status === "sent") {
-                document.getElementById('p1').classList.add('hidden');
-                document.getElementById('p2').classList.remove('hidden');
+                document.getElementById("p1").classList.add("hidden");
+                document.getElementById("p2").classList.remove("hidden");
             } else {
-                setMsg('msg1', 'Correo no registrado.', 'err');
+                setMsg("msg1", "Correo no registrado.", "err");
             }
-        } catch(e) {
-            setMsg('msg1', 'Error de conexión.', 'err');
-        }
+        });
     }
 
-    async function validar() {
-        const email = document.getElementById('correo').value.trim();
-        const otp   = document.getElementById('otp').value.trim();
-        if (!otp) return setMsg('msg2', 'Ingresa el código.', 'err');
+    function validar() {
+        var email = document.getElementById("correo").value.trim();
+        var otp   = document.getElementById("otp").value.trim();
+        if (!otp) return setMsg("msg2", "Ingresa el codigo.", "err");
 
-        setMsg('msg2', 'Verificando...', 'ok');
-        try {
-            const res = await getAPI({ action: "verifyOTP", email, otp });
+        setMsg("msg2", "Verificando...", "ok");
+
+        callAPI({ action: "verifyOTP", email: email, otp: otp }, function(err, res) {
+            if (err) return setMsg("msg2", "Error de conexion.", "err");
             if (res.status === "valid") {
-                document.getElementById('p2').classList.add('hidden');
-                document.getElementById('p3').classList.remove('hidden');
+                document.getElementById("p2").classList.add("hidden");
+                document.getElementById("p3").classList.remove("hidden");
             } else {
-                setMsg('msg2', 'Código incorrecto o vencido.', 'err');
+                setMsg("msg2", "Codigo incorrecto o vencido.", "err");
             }
-        } catch(e) {
-            setMsg('msg2', 'Error de conexión.', 'err');
-        }
+        });
     }
 
-    async function registrar() {
-        const campos = ['nombre','casa','visitado','fecha','hora','dui'];
-        const d = { action: "saveVisit" };
-        for (const c of campos) {
-            d[c] = document.getElementById(c).value.trim();
-            if (!d[c]) return setMsg('msg3', 'Completa todos los campos.', 'err');
+    function registrar() {
+        var campos = ["nombre", "casa", "visitado", "fecha", "hora", "dui"];
+        var d = { action: "saveVisit" };
+
+        for (var i = 0; i < campos.length; i++) {
+            var val = document.getElementById(campos[i]).value.trim();
+            if (!val) return setMsg("msg3", "Completa todos los campos.", "err");
+            d[campos[i]] = val;
         }
 
-        setMsg('msg3', 'Guardando...', 'ok');
-        try {
-            const res = await getAPI(d);
+        setMsg("msg3", "Guardando...", "ok");
+
+        callAPI(d, function(err, res) {
+            if (err) return setMsg("msg3", "Error de conexion.", "err");
             if (res.status === "success") {
-                setMsg('msg3', '¡Registro guardado con éxito!', 'ok');
-                setTimeout(() => location.reload(), 2000);
+                setMsg("msg3", "Registro guardado con exito!", "ok");
+                setTimeout(function() { location.reload(); }, 2000);
             } else {
-                setMsg('msg3', 'Error: ' + (res.message || 'intenta de nuevo.'), 'err');
+                setMsg("msg3", "Error: " + (res.message || "intenta de nuevo."), "err");
             }
-        } catch(e) {
-            setMsg('msg3', 'Error de conexión.', 'err');
-        }
+        });
     }
 </script>
 </body>
