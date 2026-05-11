@@ -1,61 +1,208 @@
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxHmk3hhO9ojEKf9mXMc-V6a63PO927qPgD5B3M2QhJh4Po6SKC1xMA77rkJgJDlu9x7w/exec"; // Asegúrate de poner tu URL de /exec
-
-// Función para mostrar mensajes temporales (Pop-ups)
-function mostrarMensaje(texto, color) {
-    const aviso = document.createElement('div');
-    aviso.innerText = texto;
-    aviso.style = `position:fixed; top:20px; left:50%; transform:translateX(-50%); 
-                   background:${color}; color:white; padding:15px; border-radius:8px; 
-                   z-index:1000; box-shadow:0 4px 6px rgba(0,0,0,0.2);`;
-    document.body.appendChild(aviso);
-    setTimeout(() => aviso.remove(), 4000); // Desaparece en 4 segundos
-}
-
-async function enviarOTP() {
-    const email = document.getElementById('email').value;
-    if(!email) return mostrarMensaje("Ingresa un correo", "#e74c3c");
-
-    try {
-        const response = await fetch(WEB_APP_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "requestOTP", email: email })
-        });
-        const res = await response.json();
-
-        if (res.status === "sent") {
-            mostrarMensaje("Revisa tu correo, código enviado", "#27ae60");
-            document.getElementById('step-email').classList.add('hidden');
-            document.getElementById('step-otp').classList.remove('hidden');
-        } else {
-            mostrarMensaje("Tu correo no está en nuestra base de datos, no puedes proseguir", "#e74c3c");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Visitas - Las Luces</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
         }
-    } catch (e) {
-        // Debido a políticas de CORS de Google, a veces el fetch da error aunque funcione.
-        // Si el correo llega, la lógica está bien.
-        mostrarMensaje("Procesando solicitud...", "#3498db");
-    }
-}
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        h2 { text-align: center; color: var(--primary); margin-top: 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 14px; }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+        }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s;
+            margin-bottom: 10px;
+        }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        .hidden { display: none; }
+        
+        /* Estilo para los Pop-ups */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            padding: 15px 25px; border-radius: 8px; color: white;
+            font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.5s, fadeOut 0.5s 3.5s forwards;
+        }
+        @keyframes slideIn { from { top: -50px; } to { top: 20px; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+    </style>
+</head>
+<body>
 
-async function enviarFormulario() {
-    const datos = {
-        action: "saveVisit",
-        nombre: document.getElementById('nombre').value,
-        casa: document.getElementById('casa').value,
-        visitado: document.getElementById('visitado').value,
-        fecha: document.getElementById('fecha').value,
-        hora: document.getElementById('hora').value,
-        dui: document.getElementById('dui').value
-    };
+<div class="container">
+    <div id="step1">
+        <h2>Acceso Residente</h2>
+        <label>Correo Electrónico</label>
+        <input type="email" id="email" placeholder="usuario@correo.com">
+        <button class="btn-primary" onclick="solicitarOTP()">Enviar Código</button>
+    </div>
 
-    try {
-        await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "no-cors", // Crucial para que Google Sheets lo acepte
-            body: JSON.stringify(datos)
-        });
-        mostrarMensaje("¡Registro guardado exitosamente!", "#27ae60");
-        setTimeout(() => location.reload(), 2000);
-    } catch (e) {
-        mostrarMensaje("Error al conectar", "#e74c3c");
+    <div id="step2" class="hidden">
+        <h2>Validar Código</h2>
+        <p style="text-align:center; color:#666;">Revisa tu correo. El código vence en 70 segundos.</p>
+        <label>Código OTP</label>
+        <input type="text" id="otpInput" placeholder="000000" maxlength="6">
+        <button class="btn-success" onclick="validarOTP()">Entrar al Formulario</button>
+        <button class="btn-outline" onclick="volverInicio()">Pedir otro código</button>
+    </div>
+
+    <div id="step3" class="hidden">
+        <h2>Registro de Visita</h2>
+        <label>Nombre del Visitante</label>
+        <input type="text" id="nombre" placeholder="Nombre completo">
+        
+        <label>Número de Casa</label>
+        <input type="text" id="casa" placeholder="Ej: 123-B">
+        
+        <label>Persona a la que visita</label>
+        <input type="text" id="visitado" placeholder="Nombre del residente">
+        
+        <label>Fecha de Visita</label>
+        <input type="date" id="fecha">
+        
+        <label>Hora de Visita</label>
+        <input type="time" id="hora">
+        
+        <label>Número de DUI</label>
+        <input type="text" id="dui" placeholder="00000000-0">
+        
+        <button class="btn-success" onclick="enviarRegistro()">Guardar en Bitácora</button>
+    </div>
+</div>
+
+<script>
+   https://script.google.com/macros/library/d/11HODbv_LBJ3IibaNtfE79BWR9nD8TOoOz3xAi6Z0SdZhD9Z2bn-p-csx/3
+    const URL_SCRIPT = "TU_URL_DE_EJECUCION_AQUI";
+
+    function mostrarAviso(mensaje, color) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = mensaje;
+        toast.style.backgroundColor = color;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
-}
+
+    async function solicitarOTP() {
+        const correo = document.getElementById('email').value;
+        if(!correo) return mostrarAviso("Escribe tu correo", "#e74c3c");
+
+        mostrarAviso("Verificando correo...", "#3498db");
+
+        try {
+            const response = await fetch(URL_SCRIPT, {
+                method: "POST",
+                body: JSON.stringify({ action: "requestOTP", email: correo })
+            });
+            const res = await response.json();
+
+            if (res.status === "sent") {
+                mostrarAviso("¡Revisa tu correo!", "#27ae60");
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+            } else {
+                mostrarAviso("Correo no encontrado en la base de datos", "#e74c3c");
+            }
+        } catch (e) {
+            mostrarAviso("Error de conexión", "#e74c3c");
+        }
+    }
+
+    async function validarOTP() {
+        const correo = document.getElementById('email').value;
+        const otp = document.getElementById('otpInput').value;
+
+        mostrarAviso("Validando...", "#3498db");
+
+        try {
+            const response = await fetch(URL_SCRIPT, {
+                method: "POST",
+                body: JSON.stringify({ action: "verifyOTP", email: correo, otp: otp })
+            });
+            const res = await response.json();
+
+            if (res.status === "valid") {
+                mostrarAviso("Código correcto", "#27ae60");
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+            } else {
+                mostrarAviso("Código incorrecto o vencido (70s). Intenta de nuevo.", "#e74c3c");
+            }
+        } catch (e) {
+            mostrarAviso("Error al validar", "#e74c3c");
+        }
+    }
+
+    function volverInicio() {
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('step1').classList.remove('hidden');
+    }
+
+    async function enviarRegistro() {
+        const datos = {
+            action: "saveVisit",
+            nombre: document.getElementById('nombre').value,
+            casa: document.getElementById('casa').value,
+            visitado: document.getElementById('visitado').value,
+            fecha: document.getElementById('fecha').value,
+            hora: document.getElementById('hora').value,
+            dui: document.getElementById('dui').value
+        };
+
+        mostrarAviso("Registrando visita...", "#3498db");
+
+        try {
+            await fetch(URL_SCRIPT, {
+                method: "POST",
+                mode: "no-cors", 
+                body: JSON.stringify(datos)
+            });
+            mostrarAviso("¡Registro exitoso!", "#27ae60");
+            setTimeout(() => location.reload(), 2500);
+        } catch (e) {
+            mostrarAviso("Error al guardar", "#e74c3c");
+        }
+    }
+</script>
+
+</body>
+</html>
