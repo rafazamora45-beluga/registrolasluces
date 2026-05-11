@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro de Visitas</title>
+    <style>
+        /* Estilos básicos para que se vea limpio */
+        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+        .hidden { display: none; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- Paso 1: Login -->
+    <div id="loginStep">
+        <h2>Acceso</h2>
+        <input type="email" id="userEmail" placeholder="Tu correo electrónico">
+        <button onclick="requestOTP()">Pedir Código</button>
+        <div id="otpInput" class="hidden">
+            <input type="text" id="otpCode" placeholder="Introduce el OTP">
+            <button onclick="verifyOTP()">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Paso 2: Formulario de Visita -->
+    <div id="formStep" class="hidden">
+        <h2>Registro de Visita</h2>
+        <input type="text" id="nombre" placeholder="Nombre del visitante">
+        <input type="text" id="casa" placeholder="Número de casa">
+        <input type="text" id="visitado" placeholder="Persona a la que visita">
+        
+        <label>Fecha de visita:</label>
+        <input type="date" id="fechaVisita"> <!-- Selector de calendario -->
+        
+        <label>Hora de visita:</label>
+        <input type="time" id="horaVisita"> <!-- Selector de reloj -->
+        
+        <input type="text" id="dui" placeholder="Número de DUI">
+        
+        <button onclick="submitForm()">Enviar Registro</button>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxL5XXjPt7QivP_ihNGXZFSX7MjFbsiaRMCCA_oH6mL0OqV-ErBOBBiXDoqwPnkuF5SEA/exec';
+
+        async function requestOTP() {
+            const email = document.getElementById('userEmail').value;
+            // Aquí haces el fetch a SCRIPT_URL enviando {action: "requestOTP", email: email}
+            document.getElementById('otpInput').classList.remove('hidden');
+        }
+
+        function verifyOTP() {
+            // Validación local simple para este ejemplo:
+            document.getElementById('loginStep').classList.add('hidden');
+            document.getElementById('formStep').classList.remove('hidden');
+        }
+
+        async function submitForm() {
+            const data = {
+                action: "saveVisit",
+                nombre: document.getElementById('nombre').value,
+                casa: document.getElementById('casa').value,
+                visitado: document.getElementById('visitado').value,
+                fecha: document.getElementById('fechaVisita').value,
+                hora: document.getElementById('horaVisita').value,
+                dui: document.getElementById('dui').value
+            };
+            
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Importante para Google Apps Script
+                body: JSON.stringify(data)
+            });
+            alert('¡Visita registrada!');
+        }
+    </script>
+</body>
+</html>
