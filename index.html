@@ -1,79 +1,61 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Registro de Visitas</title>
-    <style>
-        /* Estilos básicos para que se vea limpio */
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
-        .hidden { display: none; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; cursor: pointer; }
-    </style>
-</head>
-<body>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxHmk3hhO9ojEKf9mXMc-V6a63PO927qPgD5B3M2QhJh4Po6SKC1xMA77rkJgJDlu9x7w/exec"; // Asegúrate de poner tu URL de /exec
 
-    <!-- Paso 1: Login -->
-    <div id="loginStep">
-        <h2>Acceso</h2>
-        <input type="email" id="userEmail" placeholder="Tu correo electrónico">
-        <button onclick="requestOTP()">Pedir Código</button>
-        <div id="otpInput" class="hidden">
-            <input type="text" id="otpCode" placeholder="Introduce el OTP">
-            <button onclick="verifyOTP()">Entrar</button>
-        </div>
-    </div>
+// Función para mostrar mensajes temporales (Pop-ups)
+function mostrarMensaje(texto, color) {
+    const aviso = document.createElement('div');
+    aviso.innerText = texto;
+    aviso.style = `position:fixed; top:20px; left:50%; transform:translateX(-50%); 
+                   background:${color}; color:white; padding:15px; border-radius:8px; 
+                   z-index:1000; box-shadow:0 4px 6px rgba(0,0,0,0.2);`;
+    document.body.appendChild(aviso);
+    setTimeout(() => aviso.remove(), 4000); // Desaparece en 4 segundos
+}
 
-    <!-- Paso 2: Formulario de Visita -->
-    <div id="formStep" class="hidden">
-        <h2>Registro de Visita</h2>
-        <input type="text" id="nombre" placeholder="Nombre del visitante">
-        <input type="text" id="casa" placeholder="Número de casa">
-        <input type="text" id="visitado" placeholder="Persona a la que visita">
-        
-        <label>Fecha de visita:</label>
-        <input type="date" id="fechaVisita"> <!-- Selector de calendario -->
-        
-        <label>Hora de visita:</label>
-        <input type="time" id="horaVisita"> <!-- Selector de reloj -->
-        
-        <input type="text" id="dui" placeholder="Número de DUI">
-        
-        <button onclick="submitForm()">Enviar Registro</button>
-    </div>
+async function enviarOTP() {
+    const email = document.getElementById('email').value;
+    if(!email) return mostrarMensaje("Ingresa un correo", "#e74c3c");
 
-    <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxL5XXjPt7QivP_ihNGXZFSX7MjFbsiaRMCCA_oH6mL0OqV-ErBOBBiXDoqwPnkuF5SEA/exec';
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "requestOTP", email: email })
+        });
+        const res = await response.json();
 
-        async function requestOTP() {
-            const email = document.getElementById('userEmail').value;
-            // Aquí haces el fetch a SCRIPT_URL enviando {action: "requestOTP", email: email}
-            document.getElementById('otpInput').classList.remove('hidden');
+        if (res.status === "sent") {
+            mostrarMensaje("Revisa tu correo, código enviado", "#27ae60");
+            document.getElementById('step-email').classList.add('hidden');
+            document.getElementById('step-otp').classList.remove('hidden');
+        } else {
+            mostrarMensaje("Tu correo no está en nuestra base de datos, no puedes proseguir", "#e74c3c");
         }
+    } catch (e) {
+        // Debido a políticas de CORS de Google, a veces el fetch da error aunque funcione.
+        // Si el correo llega, la lógica está bien.
+        mostrarMensaje("Procesando solicitud...", "#3498db");
+    }
+}
 
-        function verifyOTP() {
-            // Validación local simple para este ejemplo:
-            document.getElementById('loginStep').classList.add('hidden');
-            document.getElementById('formStep').classList.remove('hidden');
-        }
+async function enviarFormulario() {
+    const datos = {
+        action: "saveVisit",
+        nombre: document.getElementById('nombre').value,
+        casa: document.getElementById('casa').value,
+        visitado: document.getElementById('visitado').value,
+        fecha: document.getElementById('fecha').value,
+        hora: document.getElementById('hora').value,
+        dui: document.getElementById('dui').value
+    };
 
-        async function submitForm() {
-            const data = {
-                action: "saveVisit",
-                nombre: document.getElementById('nombre').value,
-                casa: document.getElementById('casa').value,
-                visitado: document.getElementById('visitado').value,
-                fecha: document.getElementById('fechaVisita').value,
-                hora: document.getElementById('horaVisita').value,
-                dui: document.getElementById('dui').value
-            };
-            
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Importante para Google Apps Script
-                body: JSON.stringify(data)
-            });
-            alert('¡Visita registrada!');
-        }
-    </script>
-</body>
-</html>
+    try {
+        await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "no-cors", // Crucial para que Google Sheets lo acepte
+            body: JSON.stringify(datos)
+        });
+        mostrarMensaje("¡Registro guardado exitosamente!", "#27ae60");
+        setTimeout(() => location.reload(), 2000);
+    } catch (e) {
+        mostrarMensaje("Error al conectar", "#e74c3c");
+    }
+}
